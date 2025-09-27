@@ -1,11 +1,14 @@
-DBT_PROJECT:                   # <-- Must match your profile name
-  target: dev
-  outputs:
-    dev:
-      type: postgres
-      host: localhost
-      user: postgres
-      password: admin
-      port: 5432
-      dbname: SQL_PRACTICE
-      schema: public
+name: 'DBT_PROJECT'
+version: '1.0'
+profile: 'DBT_PROJECT'   # <-- This must match the profile in profiles.yml
+
+# rest of your project config
+config-version: 2
+
+model-paths: ["models"]
+snapshot-paths: ["snapshots"]
+seed-paths: ["seeds"]
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_modules"
