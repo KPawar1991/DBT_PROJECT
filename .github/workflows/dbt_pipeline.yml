@@ -3,24 +3,34 @@ name: DBT Pipeline CI/CD
 on:
   push:
     branches:
-      - main       # Runs on push to main branch
+      - main
   schedule:
-    - cron: "0 2 * * *"  # Daily at 2:00 AM UTC
+    - cron: "0 2 * * *"  # daily at 2:00 AM UTC
 
 jobs:
   dbt:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: admin
-          POSTGRES_DB: SQL_PRACTICE
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    steps:          # <-- Make sure 'steps:' is here
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dbt
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install dbt-postgres psycopg2-binary
+
+      - name: Run dbt pipeline
+        run: |
+          source venv/bin/activate
+          dbt seed --profiles-dir .
+          dbt snapshot --profiles-dir .
+          dbt run --profiles-dir .
+          dbt test --profiles-dir .
+          dbt docs generate --profiles-dir .
