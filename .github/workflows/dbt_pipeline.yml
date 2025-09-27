@@ -1,0 +1,58 @@
+name: DBT Pipeline CI/CD
+
+on:
+  push:
+    branches:
+      - main       # Runs on push to main branch
+  schedule:
+    - cron: "0 2 * * *"  # Daily at 2:00 AM UTC
+
+jobs:
+  dbt:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2️⃣ Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # 3️⃣ Install dbt + dependencies
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install dbt-postgres psycopg2-binary
+
+      # 4️⃣ Set environment variables for Postgres (from GitHub Secrets)
+      - name: Set environment variables
+        run: |
+          echo "DBT_PROFILES_DIR=${{ github.workspace }}" >> $GITHUB_ENV
+          echo "PGHOST=${{ secrets.PGHOST }}" >> $GITHUB_ENV
+          echo "PGUSER=${{ secrets.PGUSER }}" >> $GITHUB_ENV
+          echo "PGPASSWORD=${{ secrets.PGPASSWORD }}" >> $GITHUB_ENV
+          echo "PGDATABASE=${{ secrets.PGDATABASE }}" >> $GITHUB_ENV
+          echo "PGPORT=${{ secrets.PGPORT }}" >> $GITHUB_ENV
+
+      # 5️⃣ Run full dbt pipeline
+      - name: Run dbt pipeline
+        run: |
+          source venv/bin/activate
+          dbt seed --profiles-dir .
+          dbt snapshot --profiles-dir .
+          dbt run --profiles-dir .
+          dbt test --profiles-dir .
+          dbt docs generate --profiles-dir .
+
+      # 6️⃣ Deploy dbt docs to GitHub Pages
+      - name: Deploy dbt docs to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target

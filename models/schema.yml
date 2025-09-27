@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: public
+    tables:
+      - name: customers_raw
+      - name: orders_raw
+
+snapshots:
+  - name: customers_snapshot
+    description: "Tracks changes in customer data (SCD Type 2)"
+
+models:
+  - name: dim_customers
+    description: "Cleansed customer dimension with full name and email"
+    columns:
+      - name: customer_id
+        description: "Primary key for customer"
+        tests:
+          - not_null
+          - unique
+      - name: email
+        description: "Customer email"
+        tests:
+          - not_null
+          - unique
+
+  - name: fact_orders
+    description: "Fact table joining customers and orders"
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - unique
+      - name: amount
+        tests:
+          - not_null
